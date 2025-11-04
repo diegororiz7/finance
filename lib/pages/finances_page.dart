@@ -1,4 +1,4 @@
-// ignore_for_file: unused_import, unused_element, unused_local_variable
+// ignore_for_file: unused_import, unused_element, unused_local_variable, use_build_context_synchronously, sort_child_properties_last
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -31,7 +31,7 @@ class _FinancesPageState extends State<FinancesPage> {
 
   //define cor do cartão
   Color _getCardColor(String type) {
-    return type == 'entrada' ? Colors.green.shade700 : Colors.red.shade700;
+    return type == 'entrada' ? Colors.green.shade400 : Colors.red.shade400;
   }
 
   //definir o ícone da categoria
@@ -194,11 +194,184 @@ class _FinancesPageState extends State<FinancesPage> {
                   );
                 }
 
-                return Column();
+                return Column(
+                  children: [
+                    //Resumo financeiro
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      color: Colors.blue.shade50,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Text(
+                            'Entrada: R\$ ${totalEntrada.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              color: Colors.green.shade700,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Saída: R\$ ${totalSaida.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              color: Colors.red.shade700,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Saldo: R\$ ${saldo.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              color: saldo > 0
+                                  ? Colors.green.shade700
+                                  : Colors.red.shade700,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    //Lista de registros
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: filteredDocs.length,
+                        itemBuilder: (context, index) {
+                          final doc = filteredDocs[index];
+                          final data = doc.data() as Map<String, dynamic>;
+                          final type = data['type'] ?? 'saida';
+                          final description = data['description'] ?? '';
+                          final category = data['category'] ?? 'Outros';
+                          final value = (data['value'] ?? 0).toDouble();
+                          final date = (data['date'] as Timestamp).toDate();
+
+                          return Card(
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            color: _getCardColor(type),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: ListTile(
+                              leading: Icon(
+                                _getCardIcon(category, type),
+                                size: 40,
+                                color: Colors.white,
+                              ),
+                              title: Text(
+                                description,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Categoria: $category\nData: ${date.day}/${date.month}/${date.year}',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Valor: R\$ ${value.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.edit,
+                                      color: Colors.orange,
+                                    ),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => AddEditPage(
+                                            docId: doc.id,
+                                            data: data,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.delete,
+                                      color: Colors.purple,
+                                    ),
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return AlertDialog(
+                                            title: const Text('Confirmação'),
+                                            content: const Text(
+                                              'Deseja realmente excluir o registro?',
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: Text(
+                                                  'Não',
+                                                  style: TextStyle(
+                                                    color: Colors.purple,
+                                                  ),
+                                                ),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  FirebaseFirestore.instance
+                                                      .collection('Finances')
+                                                      .doc(doc.id)
+                                                      .delete()
+                                                      .then(
+                                                        (_) => Navigator.of(
+                                                          context,
+                                                        ).pop(),
+                                                      );
+                                                },
+                                                child: Text(
+                                                  'Sim',
+                                                  style: TextStyle(
+                                                    color: Colors.red,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
               },
             ),
           ),
         ],
+      ),
+      //Botão de incluir registros
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.blueAccent,
+        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => AddEditPage()),
+          );
+        },
       ),
     );
   }
