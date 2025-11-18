@@ -1,4 +1,4 @@
-// ignore_for_file: unused_import
+// ignore_for_file: unused_import, unused_field, prefer_final_fields, unused_local_variable, deprecated_member_use
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -15,8 +15,124 @@ class AddEditPage extends StatefulWidget {
 }
 
 class _AddEditPageState extends State<AddEditPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _descriptionController = TextEditingController();
+  final _valueController = TextEditingController();
+  String _category = '';
+  String _type = 'saida';
+  DateTime _selectedDate = DateTime.now();
+
+  //Lista de categorias
+  final Map<String, List<String>> categories = {
+    'entrada': ['Salário', 'Vendas', 'Outros'],
+    'saida': ['Alimentação', 'Saúde', 'Lazer', 'Educação', 'Outros'],
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.data != null) {
+      _descriptionController.text = widget.data!['description'];
+      _valueController.text = (widget.data!['value']).toString();
+      _category = widget.data!['category'];
+      _type = widget.data!['type'] ?? 'saida';
+      _selectedDate = (widget.data!['date'] as Timestamp).toDate();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    final currentCategories = categories[_type];
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.docId == null ? 'Adicionar registro' : 'Editar registro',
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(labelText: 'Descrição:'),
+                validator: (val) =>
+                    val == null || val.isEmpty ? 'Informe a descrição' : null,
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _valueController,
+                decoration: const InputDecoration(labelText: 'Valor:'),
+                validator: (val) =>
+                    val == null || val.isEmpty ? 'Informe o valor' : null,
+                keyboardType: TextInputType.number,
+              ),
+              DropdownButtonFormField(
+                value: _type,
+                items: const [
+                  DropdownMenuItem(value: 'entrada', child: Text('entrada')),
+                  DropdownMenuItem(value: 'saida', child: Text('saida')),
+                ],
+                onChanged: (val) {
+                  setState(() {
+                    _type = val!;
+                    _category = '';
+                  });
+                },
+                decoration: const InputDecoration(labelText: 'Tipo:'),
+              ),
+              DropdownButtonFormField(
+                value: _category.isNotEmpty ? _category : '',
+                items: currentCategories!
+                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                    .toList(),
+                onChanged: (val) {
+                  setState(() {
+                    _category = val!;
+                  });
+                },
+                validator: (val) =>
+                    val == null || val.isEmpty ? 'Selecione a categoria' : null,
+                decoration: const InputDecoration(labelText: 'Categoria:'),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Text(
+                    'Data: ${_selectedDate.toLocal().toString().split('')[0]}',
+                  ),
+                  SizedBox(width: 16),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.blue,
+                    ),
+                    onPressed: () async {
+                      DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: _selectedDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2030),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          _selectedDate = picked;
+                        });
+                      }
+                    },
+                    child: Text(
+                      'Selecionar data',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
