@@ -84,7 +84,7 @@ class _AddEditPageState extends State<AddEditPage> {
                 decoration: const InputDecoration(labelText: 'Tipo:'),
               ),
               DropdownButtonFormField(
-                value: _category.isNotEmpty ? _category : '',
+                value: _category.isNotEmpty ? _category : null,
                 items: currentCategories!
                     .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                     .toList(),
@@ -128,6 +128,39 @@ class _AddEditPageState extends State<AddEditPage> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.blue,
+                ),
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    final data = {
+                      'description': _descriptionController.text,
+                      'value': (double.tryParse(_valueController.text) ?? 0),
+                      'type': _type,
+                      'category': _category,
+                      'date': Timestamp.fromDate(_selectedDate),
+                    };
+                    if (widget.docId == null) {
+                      FirebaseFirestore.instance
+                          .collection('Finances')
+                          .add(data);
+                    } else {
+                      FirebaseFirestore.instance
+                          .collection('Finances')
+                          .doc(widget.docId)
+                          .update(data);
+                    }
+                    Navigator.pop(context);
+                  }
+                },
+                child: Text(
+                  widget.docId == null ? 'Adicionar' : 'Editar',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
           ),
